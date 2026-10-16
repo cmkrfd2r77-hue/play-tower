@@ -1,0 +1,396 @@
+diff --git a/Source/gs/GSHandler.cpp b/Source/gs/GSHandler.cpp
+index 57e58ba..9ff13d8 100644
+--- a/Source/gs/GSHandler.cpp
++++ b/Source/gs/GSHandler.cpp
+@@ -164,6 +164,7 @@ void CGSHandler::ResetBase()
+ 	m_nDISPLAY2.heldValue = 0;
+ 	m_nDISPLAY2.value.q = 0x1BF9FF72617467;
+ 	m_nCSR = CSR_FIFO_EMPTY | (GS_REVISION << 16);
++	m_pendingFinishReads = 0;
+ 	m_nIMR = ~0;
+ 	m_nBUSDIR = 0;
+ 	m_nSIGLBLID = 0;
+@@ -437,6 +438,14 @@ uint32 CGSHandler::ReadPrivRegister(uint32 nAddress)
+ 	case GS_CSR_ALT:
+ 	{
+ 		std::lock_guard registerMutexLock(m_registerMutex);
++		if((m_pendingFinishReads != 0) && !(nAddress & 0x04))
++		{
++			m_pendingFinishReads--;
++			if(m_pendingFinishReads == 0)
++			{
++				m_nCSR |= CSR_FINISH_EVENT;
++			}
++		}
+ 		R_REG(nAddress, nData, m_nCSR);
+ 	}
+ 	break;
+@@ -690,8 +699,20 @@ void CGSHandler::ProcessWriteBuffer(const CGsPacketMetadata* metadata)
+ 		}
+ 		break;
+ 		case GS_REG_FINISH:
+-			m_nCSR |= CSR_FINISH_EVENT;
+-			NotifyEvent(CSR_FINISH_EVENT);
++			if(m_nIMR & (CSR_FINISH_EVENT << 8))
++			{
++				//FINISH interrupt is masked, so the game polls CSR. On hardware, FINISH is raised only once the
++				//GS has drained its queue, some time after the transfer was kicked. Homebrew built with older
++				//ps2sdk versions clears every pending CSR event in graph_wait_vsync right after kicking a transfer
++				//and then waits for FINISH: an instant FINISH gets cleared and the wait never ends.
++				//Make the event visible after a few CSR reads to mimic that latency.
++				m_pendingFinishReads = FINISH_POLL_LATENCY;
++			}
++			else
++			{
++				m_nCSR |= CSR_FINISH_EVENT;
++				NotifyEvent(CSR_FINISH_EVENT);
++			}
+ 			break;
+ 		case GS_REG_LABEL:
+ 		{
+diff --git a/Source/gs/GSHandler.h b/Source/gs/GSHandler.h
+index 66bfe59..4e9e70b 100644
+--- a/Source/gs/GSHandler.h
++++ b/Source/gs/GSHandler.h
+@@ -129,6 +129,11 @@ public:
+ 		CSR_FIFO_FULL = 0x8000
+ 	};
+ 
++	enum
++	{
++		FINISH_POLL_LATENCY = 4,
++	};
++
+ 	struct VERTEX
+ 	{
+ 		uint64 position;
+@@ -1094,6 +1099,7 @@ protected:
+ 	DELAYED_REGISTER m_nDISPFB2;  //0x12000090
+ 	DELAYED_REGISTER m_nDISPLAY2; //0x120000A0
+ 	uint64 m_nCSR;                //0x12001000
++	uint32 m_pendingFinishReads = 0;
+ 	uint64 m_nIMR;                //0x12001010
+ 	uint64 m_nBUSDIR;             //0x12001040
+ 	uint64 m_nSIGLBLID;           //0x12001080
+diff --git a/Source/ui_js/CMakeLists.txt b/Source/ui_js/CMakeLists.txt
+index cf3518e..5e60dd7 100644
+--- a/Source/ui_js/CMakeLists.txt
++++ b/Source/ui_js/CMakeLists.txt
+@@ -58,6 +58,7 @@ target_link_options(Play PRIVATE "-sUSE_ES6_IMPORT_META=0")
+ target_link_options(Play PRIVATE "-sEXPORTED_FUNCTIONS=['_main', '_initVm', '_EmptyBlockHandler', '_MemoryUtils_GetByteProxy', '_MemoryUtils_GetHalfProxy', '_MemoryUtils_GetWordProxy', '_MemoryUtils_GetDoubleProxy', '_MemoryUtils_SetByteProxy', '_MemoryUtils_SetHalfProxy', '_MemoryUtils_SetWordProxy', '_MemoryUtils_SetDoubleProxy', '_LWL_Proxy', '_LWR_Proxy', '_LDL_Proxy', '_LDR_Proxy', '_SWL_Proxy', '_SWR_Proxy', '_SDL_Proxy', '_SDR_Proxy']")
+ target_link_options(Play PRIVATE "-sEXPORTED_RUNTIME_METHODS=['ccall', 'FS']")
+ target_link_options(Play PRIVATE "-sFORCE_FILESYSTEM")
++target_link_options(Play PRIVATE "-lidbfs.js")
+ target_link_options(Play PRIVATE "-sALLOW_TABLE_GROWTH")
+ target_link_options(Play PRIVATE "-sALLOW_MEMORY_GROWTH")
+ #target_link_options(Play PRIVATE "-sASSERTIONS=2")
+diff --git a/Source/ui_js/InputProviderEmscripten.cpp b/Source/ui_js/InputProviderEmscripten.cpp
+index 763bc0f..99be57b 100644
+--- a/Source/ui_js/InputProviderEmscripten.cpp
++++ b/Source/ui_js/InputProviderEmscripten.cpp
+@@ -111,3 +111,15 @@ void CInputProviderEmscripten::OnKeyUp(const EM_UTF8* code)
+ {
+ 	OnInput(MakeBindingTarget(code), 0);
+ }
++
++BINDINGTARGET CInputProviderEmscripten::MakeVirtualBindingTarget(uint32 pad, PS2::CControllerInfo::BUTTON button)
++{
++	auto keyType = PS2::CControllerInfo::IsAxis(button) ? BINDINGTARGET::KEYTYPE::AXIS : BINDINGTARGET::KEYTYPE::BUTTON;
++	return BINDINGTARGET(PROVIDER_ID, DeviceIdType{{pad + 1}}, button, keyType);
++}
++
++void CInputProviderEmscripten::SetVirtualInput(uint32 pad, uint32 button, uint32 value)
++{
++	if(button >= PS2::CControllerInfo::MAX_BUTTONS) return;
++	OnInput(MakeVirtualBindingTarget(pad, static_cast<PS2::CControllerInfo::BUTTON>(button)), value);
++}
+diff --git a/Source/ui_js/InputProviderEmscripten.h b/Source/ui_js/InputProviderEmscripten.h
+index dbd0592..9a0cc8a 100644
+--- a/Source/ui_js/InputProviderEmscripten.h
++++ b/Source/ui_js/InputProviderEmscripten.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include "input/InputProvider.h"
++#include "ControllerInfo.h"
+ #include <emscripten/html5.h>
+ 
+ class CInputProviderEmscripten : public CInputProvider
+@@ -13,4 +14,8 @@ public:
+ 
+ 	void OnKeyDown(const EM_UTF8*);
+ 	void OnKeyUp(const EM_UTF8*);
++
++	//Virtual pads are driven from JavaScript (keyboard, gamepads and touch controls).
++	static BINDINGTARGET MakeVirtualBindingTarget(uint32 pad, PS2::CControllerInfo::BUTTON);
++	void SetVirtualInput(uint32 pad, uint32 button, uint32 value);
+ };
+diff --git a/Source/ui_js/Main.cpp b/Source/ui_js/Main.cpp
+index 999e24c..853fbac 100644
+--- a/Source/ui_js/Main.cpp
++++ b/Source/ui_js/Main.cpp
+@@ -7,12 +7,24 @@
+ #include "InputProviderEmscripten.h"
+ #include "ui_shared/StatsManager.h"
+ #include "DefaultAppConfig.h"
++#include "AppConfig.h"
++#include "PS2VM_Preferences.h"
++#include "gs/GSH_OpenGL/GSH_OpenGL.h"
++#include <AL/al.h>
++#include <chrono>
++#include <future>
++
++constexpr uint32 MAX_JS_PADS = 2;
+ 
+ CPs2VmJs* g_virtualMachine = nullptr;
+ CGSHandler::NewFrameEvent::Connection g_gsNewFrameConnection;
+ EMSCRIPTEN_WEBGL_CONTEXT_HANDLE g_context = 0;
+ std::shared_ptr<CInputProviderEmscripten> g_inputProvider;
+ CSH_OpenAL* g_soundHandler = nullptr;
++std::future<bool> g_stateFuture;
++CGSHandler::PRESENTATION_MODE g_presentationMode = CGSHandler::PRESENTATION_MODE_FIT;
++int g_outputWidth = 640;
++int g_outputHeight = 480;
+ 
+ int main(int argc, const char** argv)
+ {
+@@ -20,24 +32,6 @@ int main(int argc, const char** argv)
+ 	return 0;
+ }
+ 
+-EM_BOOL keyboardCallback(int eventType, const EmscriptenKeyboardEvent* keyEvent, void* userData)
+-{
+-	if(keyEvent->repeat)
+-	{
+-		return true;
+-	}
+-	switch(eventType)
+-	{
+-	case EMSCRIPTEN_EVENT_KEYDOWN:
+-		g_inputProvider->OnKeyDown(keyEvent->code);
+-		break;
+-	case EMSCRIPTEN_EVENT_KEYUP:
+-		g_inputProvider->OnKeyUp(keyEvent->code);
+-		break;
+-	}
+-	return true;
+-}
+-
+ extern "C" void initVm()
+ {
+ 	EmscriptenWebGLContextAttributes attr;
+@@ -45,6 +39,8 @@ extern "C" void initVm()
+ 	attr.majorVersion = 2;
+ 	attr.minorVersion = 0;
+ 	attr.alpha = false;
++	//Keeps the last frame readable so the frontend can take screenshots and save-state thumbnails.
++	attr.preserveDrawingBuffer = true;
+ 	g_context = emscripten_webgl_create_context("#outputCanvas", &attr);
+ 	assert(g_context >= 0);
+ 
+@@ -71,36 +67,17 @@ extern "C" void initVm()
+ 		g_inputProvider = std::make_shared<CInputProviderEmscripten>();
+ 		bindingManager.RegisterInputProvider(g_inputProvider);
+ 
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::START, CInputProviderEmscripten::MakeBindingTarget("Enter"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::SELECT, CInputProviderEmscripten::MakeBindingTarget("Backspace"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::DPAD_LEFT, CInputProviderEmscripten::MakeBindingTarget("ArrowLeft"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::DPAD_RIGHT, CInputProviderEmscripten::MakeBindingTarget("ArrowRight"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::DPAD_UP, CInputProviderEmscripten::MakeBindingTarget("ArrowUp"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::DPAD_DOWN, CInputProviderEmscripten::MakeBindingTarget("ArrowDown"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::SQUARE, CInputProviderEmscripten::MakeBindingTarget("KeyA"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::CROSS, CInputProviderEmscripten::MakeBindingTarget("KeyZ"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::TRIANGLE, CInputProviderEmscripten::MakeBindingTarget("KeyS"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::CIRCLE, CInputProviderEmscripten::MakeBindingTarget("KeyX"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::L1, CInputProviderEmscripten::MakeBindingTarget("Key1"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::L2, CInputProviderEmscripten::MakeBindingTarget("Key2"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::L3, CInputProviderEmscripten::MakeBindingTarget("Key3"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::R1, CInputProviderEmscripten::MakeBindingTarget("Key8"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::R2, CInputProviderEmscripten::MakeBindingTarget("Key9"));
+-		bindingManager.SetSimpleBinding(0, PS2::CControllerInfo::R3, CInputProviderEmscripten::MakeBindingTarget("Key0"));
+-
+-		bindingManager.SetSimulatedAxisBinding(0, PS2::CControllerInfo::ANALOG_LEFT_X,
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyF"),
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyH"));
+-		bindingManager.SetSimulatedAxisBinding(0, PS2::CControllerInfo::ANALOG_LEFT_Y,
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyT"),
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyG"));
+-
+-		bindingManager.SetSimulatedAxisBinding(0, PS2::CControllerInfo::ANALOG_RIGHT_X,
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyJ"),
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyL"));
+-		bindingManager.SetSimulatedAxisBinding(0, PS2::CControllerInfo::ANALOG_RIGHT_Y,
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyI"),
+-		                                       CInputProviderEmscripten::MakeBindingTarget("KeyK"));
++		//Every pad button is fed by JavaScript through setPadInput, which lets the
++		//frontend handle keyboard remapping, gamepads and touch controls for two players.
++		for(uint32 pad = 0; pad < MAX_JS_PADS; pad++)
++		{
++			for(uint32 button = 0; button < PS2::CControllerInfo::MAX_BUTTONS; button++)
++			{
++				auto buttonId = static_cast<PS2::CControllerInfo::BUTTON>(button);
++				bindingManager.SetSimpleBinding(pad, buttonId, CInputProviderEmscripten::MakeVirtualBindingTarget(pad, buttonId));
++			}
++		}
++		bindingManager.ResetBindingValues();
+ 	}
+ 
+ 	{
+@@ -109,14 +86,6 @@ extern "C" void initVm()
+ 	}
+ 
+ 	g_gsNewFrameConnection = g_virtualMachine->GetGSHandler()->OnNewFrame.Connect(std::bind(&CStatsManager::OnGsNewFrame, &CStatsManager::GetInstance(), std::placeholders::_1));
+-
+-	EMSCRIPTEN_RESULT result = EMSCRIPTEN_RESULT_SUCCESS;
+-
+-	result = emscripten_set_keydown_callback("#outputCanvas", nullptr, false, &keyboardCallback);
+-	assert(result == EMSCRIPTEN_RESULT_SUCCESS);
+-
+-	result = emscripten_set_keyup_callback("#outputCanvas", nullptr, false, &keyboardCallback);
+-	assert(result == EMSCRIPTEN_RESULT_SUCCESS);
+ }
+ 
+ void bootElf(std::string path)
+@@ -139,6 +108,99 @@ void clearStats()
+ 	CStatsManager::GetInstance().ClearStats();
+ }
+ 
++void setPadInput(int pad, int button, int value)
++{
++	if(!g_inputProvider || (pad < 0) || (pad >= static_cast<int>(MAX_JS_PADS))) return;
++	g_inputProvider->SetVirtualInput(pad, button, value);
++}
++
++//Pause/resume never block the browser's main thread: the emulator thread may
++//need the main thread (WebGL, audio and disc reads are proxied to it).
++void pauseVm()
++{
++	g_virtualMachine->PauseAsync();
++}
++
++void resumeVm()
++{
++	g_virtualMachine->ResumeAsync();
++}
++
++bool isVmRunning()
++{
++	return g_virtualMachine->GetStatus() == CVirtualMachine::RUNNING;
++}
++
++bool saveState(std::string path)
++{
++	if(g_stateFuture.valid()) return false;
++	g_stateFuture = g_virtualMachine->SaveState(path);
++	return true;
++}
++
++bool loadState(std::string path)
++{
++	if(g_stateFuture.valid()) return false;
++	g_stateFuture = g_virtualMachine->LoadState(path);
++	return true;
++}
++
++//0: in progress, 1: succeeded, -1: failed, 2: no operation pending
++int getStateResult()
++{
++	if(!g_stateFuture.valid()) return 2;
++	if(g_stateFuture.wait_for(std::chrono::seconds(0)) != std::future_status::ready) return 0;
++	return g_stateFuture.get() ? 1 : -1;
++}
++
++static void updatePresentation()
++{
++	CGSHandler::PRESENTATION_PARAMS presentationParams;
++	presentationParams.mode = g_presentationMode;
++	presentationParams.windowWidth = g_outputWidth;
++	presentationParams.windowHeight = g_outputHeight;
++	g_virtualMachine->m_ee->m_gs->SetPresentationParams(presentationParams);
++}
++
++void setOutputSize(int width, int height)
++{
++	if((width <= 0) || (height <= 0)) return;
++	g_outputWidth = width;
++	g_outputHeight = height;
++	emscripten_set_canvas_element_size("#outputCanvas", width, height);
++	updatePresentation();
++}
++
++void setPresentationMode(int mode)
++{
++	if((mode < CGSHandler::PRESENTATION_MODE_FILL) || (mode > CGSHandler::PRESENTATION_MODE_ORIGINAL)) return;
++	g_presentationMode = static_cast<CGSHandler::PRESENTATION_MODE>(mode);
++	updatePresentation();
++}
++
++void setResolutionFactor(int factor)
++{
++	if((factor < 1) || (factor > 8)) return;
++	CAppConfig::GetInstance().SetPreferenceInteger(PREF_CGSH_OPENGL_RESOLUTION_FACTOR, factor);
++	g_virtualMachine->m_ee->m_gs->NotifyPreferencesChanged();
++}
++
++void setFrameLimit(bool enabled)
++{
++	CAppConfig::GetInstance().SetPreferenceBoolean(PREF_PS2_LIMIT_FRAMERATE, enabled);
++	g_virtualMachine->ReloadFrameRateLimit();
++}
++
++void setVolume(float volume)
++{
++	alListenerf(AL_GAIN, std::max(0.0f, std::min(volume, 1.0f)));
++}
++
++std::string getVersion()
++{
++	return PLAY_VERSION;
++}
++
+ EMSCRIPTEN_BINDINGS(Play)
+ {
+ 	using namespace emscripten;
+@@ -147,4 +209,17 @@ EMSCRIPTEN_BINDINGS(Play)
+ 	function("bootDiscImage", &bootDiscImage);
+ 	function("getFrames", &getFrames);
+ 	function("clearStats", &clearStats);
++	function("setPadInput", &setPadInput);
++	function("pauseVm", &pauseVm);
++	function("resumeVm", &resumeVm);
++	function("isVmRunning", &isVmRunning);
++	function("saveState", &saveState);
++	function("loadState", &loadState);
++	function("getStateResult", &getStateResult);
++	function("setOutputSize", &setOutputSize);
++	function("setPresentationMode", &setPresentationMode);
++	function("setResolutionFactor", &setResolutionFactor);
++	function("setFrameLimit", &setFrameLimit);
++	function("setVolume", &setVolume);
++	function("getVersion", &getVersion);
+ }
+diff --git a/Source/ui_js/Ps2VmJs.cpp b/Source/ui_js/Ps2VmJs.cpp
+index b779dbe..60953b3 100644
+--- a/Source/ui_js/Ps2VmJs.cpp
++++ b/Source/ui_js/Ps2VmJs.cpp
+@@ -81,4 +81,8 @@ void CPs2VmJs::BootDiscImage(std::string path)
+ 		printf("Starting...\r\n");
+ 		ResumeImpl();
+ 	});
+-}
+\ No newline at end of file
++}
++void CPs2VmJs::ResumeAsync()
++{
++	m_mailBox.SendCall([this]() { ResumeImpl(); });
++}
+diff --git a/Source/ui_js/Ps2VmJs.h b/Source/ui_js/Ps2VmJs.h
+index 4484d5d..e7d1ba2 100644
+--- a/Source/ui_js/Ps2VmJs.h
++++ b/Source/ui_js/Ps2VmJs.h
+@@ -9,4 +9,5 @@ public:
+ 
+ 	void BootElf(std::string);
+ 	void BootDiscImage(std::string);
++	void ResumeAsync();
+ };

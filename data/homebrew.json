@@ -1,0 +1,63 @@
+{
+  "note": "Open-source PS2 homebrew that is free to redistribute. Files are fetched straight from GitHub.",
+  "items": [
+    {
+      "id": "glampert-dungeon",
+      "title": "Dungeon Game",
+      "author": "Guilherme Lampert",
+      "license": "MIT",
+      "repo": "glampert/ps2-homebrew",
+      "url": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/source/demos/bin/dungeon_game.elf",
+      "size": 4386402,
+      "image": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/extras/screenshots/screen13.png",
+      "kind": "game",
+      "desc": {
+        "ar": "لعبة زنزانات ثلاثية الأبعاد كاملة: مقبرة، وحوش، وزعيم في النهاية. مكتوبة بـ PS2DEV.",
+        "en": "A complete 3D dungeon crawler: a graveyard, monsters and a boss fight. Written with PS2DEV."
+      }
+    },
+    {
+      "id": "glampert-cubes",
+      "title": "Rotating Cubes",
+      "author": "Guilherme Lampert",
+      "license": "MIT",
+      "repo": "glampert/ps2-homebrew",
+      "url": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/source/demos/bin/cubes_demo.elf",
+      "size": 243288,
+      "image": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/extras/screenshots/screen42.png",
+      "kind": "demo",
+      "desc": {
+        "ar": "عرض تقني لمكعبات مكسوّة تدور، مع إحصائيات الرسم. اضغط SELECT لإظهار وحدة التحكم.",
+        "en": "A tech demo of textured spinning cubes with draw statistics. Press SELECT to toggle the console."
+      }
+    },
+    {
+      "id": "glampert-console",
+      "title": "Console Demo",
+      "author": "Guilherme Lampert",
+      "license": "MIT",
+      "repo": "glampert/ps2-homebrew",
+      "url": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/source/demos/bin/console_demo.elf",
+      "size": 233856,
+      "kind": "demo",
+      "desc": {
+        "ar": "وحدة أوامر نصية تعمل داخل الجهاز. مثال على الكتابة على الشاشة ولوحة التحكم.",
+        "en": "An in-game text console that runs on the console itself, showing text output and pad input."
+      }
+    },
+    {
+      "id": "glampert-adpcm",
+      "title": "ADPCM Audio Demo",
+      "author": "Guilherme Lampert",
+      "license": "MIT",
+      "repo": "glampert/ps2-homebrew",
+      "url": "https://raw.githubusercontent.com/glampert/ps2-homebrew/main/source/demos/bin/play_adpcm_demo.elf",
+      "size": 1144640,
+      "kind": "demo",
+      "desc": {
+        "ar": "تشغيل صوت ADPCM عبر معالج الصوت SPU2. شغّل الصوت لتسمعه.",
+        "en": "Plays ADPCM audio through the SPU2 sound processor. Turn your sound on to hear it."
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Play! Tower — PS2",
+  "short_name": "Play! Tower",
+  "description": "A PlayStation 2 emulator in your browser, built on the open-source Play! core.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#04060e",
+  "theme_color": "#04060e",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

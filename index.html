@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>برج بلاي</title>
+<meta name="description" content="محاكي بلايستيشن 2 مفتوح المصدر يعمل في المتصفح: مكتبة ألعاب تتعرّف على أقراصك تلقائيًا، أغلفة من GitHub، يد تحكم، وحفظ الحالات.">
+<meta name="theme-color" content="#04060e">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+<link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;600;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Michroma&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // GitHub Pages cannot send the cross-origin isolation headers the emulator needs,
+  // so a service worker adds them. The page reloads once when the worker takes over.
+  (function () {
+    if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
+    var reloaded = false;
+    try { reloaded = sessionStorage.getItem('tower-coi') === '1'; } catch (e) {}
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      if (window.crossOriginIsolated || reloaded) return;
+      var reload = function () {
+        try { sessionStorage.setItem('tower-coi', '1'); } catch (e) {}
+        location.reload();
+      };
+      // A hard reload bypasses the worker even when it is already active; reload through it.
+      if (navigator.serviceWorker.controller || reg.active) reload();
+      else navigator.serviceWorker.addEventListener('controllerchange', reload);
+    }).catch(function (err) { console.warn('Service worker unavailable', err); });
+    if (window.crossOriginIsolated) { try { sessionStorage.removeItem('tower-coi'); } catch (e) {} }
+  })();
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="tower-g" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#4161ff" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#cfe0ff"/>
+    </linearGradient>
+  </defs>
+  <symbol id="i-logo" viewBox="0 0 40 40"><rect x="5" y="16" width="7" height="20" rx="1.5" fill="url(#tower-g)"/><rect x="16.5" y="5" width="7" height="31" rx="1.5" fill="url(#tower-g)"/><rect x="28" y="11" width="7" height="25" rx="1.5" fill="url(#tower-g)"/><rect x="16.5" y="5" width="7" height="3" rx="1.5" fill="#fff"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M12 11v5M9.5 13.5h5" stroke-linecap="round"/></symbol>
+  <symbol id="i-disc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9" stroke-linecap="round" opacity=".5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></symbol>
+  <symbol id="i-star-fill" viewBox="0 0 24 24" fill="currentColor"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></symbol>
+  <symbol id="i-load" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-ff" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6.2v11.6a.8.8 0 0 0 1.3.6l7.2-5.8a.8.8 0 0 0 0-1.2L4.3 5.6A.8.8 0 0 0 3 6.2Zm9 0v11.6a.8.8 0 0 0 1.3.6l7.2-5.8a.8.8 0 0 0 0-1.2l-7.2-5.8a.8.8 0 0 0-1.3.6Z"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+  <symbol id="i-touch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="7" width="20" height="11" rx="5.5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="16" cy="11" r=".8" fill="currentColor"/><circle cx="18" cy="13.5" r=".8" fill="currentColor"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></symbol>
+  <symbol id="i-pad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7h10a5 5 0 0 1 4.8 6.4l-1 3.4a2.4 2.4 0 0 1-4.2.8L15 15.5H9l-1.6 2.1a2.4 2.4 0 0 1-4.2-.8l-1-3.4A5 5 0 0 1 7 7Z"/><path d="M8 10v3M6.5 11.5h3"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor"/><circle cx="17.5" cy="12.5" r=".7" fill="currentColor"/></symbol>
+</svg>
+
+<canvas id="ambient" class="ambient" aria-hidden="true"></canvas>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg aria-hidden="true"><use href="#i-logo"/></svg>
+      <div>
+        <span class="brand-name" data-i18n="appName">برج بلاي</span>
+        <span class="brand-sub">PS2 · Play! core</span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-library" aria-selected="true" data-view="library" data-i18n="navLibrary">مكتبتي</button>
+      <button class="tab" role="tab" id="tab-store" aria-selected="false" data-view="store" data-i18n="navStore">ألعاب GitHub</button>
+    </nav>
+    <label class="search">
+      <svg aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="sr-only" data-i18n="search">ابحث</span>
+      <input id="search" type="search" autocomplete="off" data-i18n-placeholder="search">
+    </label>
+    <div class="top-actions">
+      <button class="btn" id="btn-add-folder"><svg aria-hidden="true"><use href="#i-folder"/></svg><span class="label" data-i18n="addFolder">إضافة مجلد</span></button>
+      <button class="btn" id="btn-open-file"><svg aria-hidden="true"><use href="#i-disc"/></svg><span class="label" data-i18n="openFile">فتح ملف</span></button>
+      <button class="icon-btn lang-btn" id="btn-lang" aria-label="English">EN</button>
+      <button class="icon-btn" id="btn-settings" data-i18n-title="settings"><svg aria-hidden="true"><use href="#i-gear"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-library" class="view" aria-labelledby="tab-library">
+      <section id="hero" class="hero" aria-live="polite"></section>
+      <div class="shelf-bar">
+        <div class="filters" id="filters" role="group">
+          <button class="filter" data-filter="all" aria-pressed="true" data-i18n="filterAll">الكل</button>
+          <button class="filter" data-filter="recent" aria-pressed="false" data-i18n="filterRecent">لُعبت مؤخرًا</button>
+          <button class="filter" data-filter="fav" aria-pressed="false" data-i18n="filterFav">المفضلة</button>
+          <button class="filter" data-filter="homebrew" aria-pressed="false" data-i18n="filterHomebrew">Homebrew</button>
+        </div>
+        <div class="shelf-meta">
+          <span id="count"></span>
+          <label class="sr-only" for="sort">Sort</label>
+          <select class="select" id="sort">
+            <option value="recent" data-i18n="sortRecent">آخر تشغيل</option>
+            <option value="name" data-i18n="sortName">الاسم</option>
+            <option value="added" data-i18n="sortAdded">تاريخ الإضافة</option>
+          </select>
+        </div>
+      </div>
+      <div id="grid" class="grid" role="list"></div>
+    </section>
+
+    <section id="view-store" class="view" aria-labelledby="tab-store" hidden>
+      <header class="store-head">
+        <h2 data-i18n="storeTitle">ألعاب مجانية من GitHub</h2>
+        <p data-i18n="storeBody"></p>
+        <div class="legal"><svg aria-hidden="true"><use href="#i-warn"/></svg><span data-i18n="storeLegal"></span></div>
+      </header>
+      <div id="store-grid" class="store-grid"></div>
+      <section class="repo-panel">
+        <h3 data-i18n="addRepo">أضف مستودعًا</h3>
+        <form class="repo-form" id="repo-form">
+          <label class="search">
+            <svg aria-hidden="true"><use href="#i-github"/></svg>
+            <span class="sr-only" data-i18n="addRepo">أضف مستودعًا</span>
+            <input id="repo-input" type="text" autocomplete="off" spellcheck="false" dir="ltr" placeholder="owner/repo" value="glampert/ps2-homebrew">
+          </label>
+          <button class="btn primary" type="submit" id="repo-submit"><svg aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="addRepoBtn">فحص المستودع</span></button>
+        </form>
+        <p class="repo-hint" data-i18n="addRepoHint"></p>
+        <div id="repo-sources"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p data-i18n="credits"></p>
+    <span class="status" id="status"><i class="dot"></i><span id="status-text"></span></span>
+  </footer>
+</div>
+
+<div id="player" class="player" dir="ltr" hidden>
+  <div class="stage" id="stage"><canvas id="outputCanvas" width="640" height="480" tabindex="-1"></canvas></div>
+  <div class="hud" id="hud">
+    <div class="hud-title">
+      <button class="icon-btn" id="hud-back" data-i18n-title="exitGame"><svg aria-hidden="true"><use href="#i-back"/></svg></button>
+      <div><b id="hud-name"></b><span class="mono" id="hud-serial"></span></div>
+    </div>
+    <div class="fps" id="hud-fps"><canvas id="fps-spark" width="128" height="44"></canvas><span><b id="fps-value">0</b> fps</span><span id="fps-speed" class="mono"></span></div>
+    <div class="hud-tools">
+      <button class="icon-btn" id="hud-pause" data-i18n-title="pauseMenu"><svg aria-hidden="true"><use href="#i-pause"/></svg></button>
+      <button class="icon-btn" id="hud-ff" data-i18n-title="fastForward"><svg aria-hidden="true"><use href="#i-ff"/></svg></button>
+      <button class="icon-btn" id="hud-save" data-i18n-title="quickSave"><svg aria-hidden="true"><use href="#i-save"/></svg></button>
+      <button class="icon-btn" id="hud-load" data-i18n-title="quickLoad"><svg aria-hidden="true"><use href="#i-load"/></svg></button>
+      <button class="icon-btn hide-sm" id="hud-shot" data-i18n-title="screenshot"><svg aria-hidden="true"><use href="#i-camera"/></svg></button>
+      <div class="volume-pop">
+        <button class="icon-btn" id="hud-vol" data-i18n-title="volume"><svg aria-hidden="true"><use href="#i-volume"/></svg></button>
+        <input type="range" id="hud-vol-range" min="0" max="1" step="0.05" hidden aria-label="Volume">
+      </div>
+      <button class="icon-btn" id="hud-touch" data-i18n-title="touchControls"><svg aria-hidden="true"><use href="#i-touch"/></svg></button>
+      <button class="icon-btn" id="hud-full" data-i18n-title="fullscreen"><svg aria-hidden="true"><use href="#i-full"/></svg></button>
+      <button class="icon-btn" id="hud-settings" data-i18n-title="settings"><svg aria-hidden="true"><use href="#i-gear"/></svg></button>
+    </div>
+  </div>
+
+  <div class="touchpad" id="touchpad" hidden>
+    <div class="tp tp-shoulder l"><button class="tp-btn" data-b="15">L2</button><button class="tp-btn" data-b="14">L1</button></div>
+    <div class="tp tp-shoulder r"><button class="tp-btn" data-b="17">R1</button><button class="tp-btn" data-b="18">R2</button></div>
+    <div class="tp tp-dpad"><button class="tp-btn" data-b="4">▲</button><button class="tp-btn" data-b="6">◀</button><button class="tp-btn" data-b="7">▶</button><button class="tp-btn" data-b="5">▼</button></div>
+    <div class="tp tp-stick" id="tp-stick" data-stick="L"><i></i></div>
+    <div class="tp tp-face"><button class="tp-btn" data-b="11">△</button><button class="tp-btn" data-b="10">□</button><button class="tp-btn" data-b="12">○</button><button class="tp-btn" data-b="13">✕</button></div>
+    <div class="tp tp-mid"><button class="tp-btn" data-b="8">SELECT</button><button class="tp-btn" data-b="9">START</button></div>
+  </div>
+
+  <div class="toast-center" id="player-toast"></div>
+
+  <div class="pause-menu" id="pause-menu" hidden>
+    <div class="pause-card" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+      <div class="pause-head">
+        <div>
+          <div class="eyebrow">Paused</div>
+          <h2 id="pause-title"></h2>
+        </div>
+        <button class="btn primary big" id="pause-resume"><svg aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="resume">متابعة</span></button>
+      </div>
+      <div class="slots" id="slots"></div>
+      <div class="pause-actions">
+        <button class="btn" id="pause-reset"><svg aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="reset">إعادة التشغيل</span></button>
+        <button class="btn" id="pause-settings"><svg aria-hidden="true"><use href="#i-gear"/></svg><span data-i18n="settings">الإعدادات</span></button>
+        <button class="btn danger" id="pause-quit"><svg aria-hidden="true"><use href="#i-close"/></svg><span data-i18n="quitGame">إنهاء اللعبة</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="boot" id="boot" hidden>
+    <canvas id="boot-canvas"></canvas>
+    <div class="boot-text">
+      <div class="boot-title" id="boot-title"></div>
+      <div class="boot-status" id="boot-status"></div>
+      <div class="boot-bar"><i id="boot-bar"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="settings" hidden aria-labelledby="settings-title" role="dialog">
+  <div class="drawer-head">
+    <h2 id="settings-title" data-i18n="settings">الإعدادات</h2>
+    <button class="icon-btn" id="settings-close" data-i18n-title="close"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="drawer-body" id="settings-body"></div>
+</aside>
+
+<div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" id="modal-card"></div></div>
+<div class="drop" id="drop" hidden><div class="drop-card"><svg aria-hidden="true"><use href="#i-disc"/></svg><h2 data-i18n="dropTitle"></h2><p data-i18n="dropBody"></p></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<input type="file" id="file-input" multiple accept=".iso,.bin,.img,.cso,.chd,.isz,.elf" hidden>
+<input type="file" id="dir-input" webkitdirectory multiple hidden>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

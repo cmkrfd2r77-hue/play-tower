@@ -1,0 +1,105 @@
+name: Update game data and core
+
+# The site is served by GitHub Pages straight from this branch.
+# - Every week: refresh the game database (PCSX2 GameIndex) and the Play! compatibility list.
+# - On demand: rebuild the Play! WebAssembly core from source with core/play-js-api.patch.
+
+on:
+  schedule:
+    - cron: "41 3 * * 1"   # Mondays 03:41 UTC
+  workflow_dispatch:
+    inputs:
+      rebuild_core:
+        description: "Rebuild the Play! core from source"
+        type: boolean
+        default: false
+      play_ref:
+        description: "Play! commit, tag or branch to build"
+        type: string
+        default: "d44bfa1814b729d4a3ed3c6c3a945432d5ee5bbe"
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Refresh game database
+        run: python3 tools/build_gamedb.py - data/gamedb.json
+      - name: Refresh compatibility list
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/build_compat.py data/compat.json
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "chore: refresh game database and compatibility"
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break || sleep $((i*5)); done
+          echo "pushed=1" >> "$GITHUB_ENV"
+      - name: Request a Pages build
+        if: env.pushed == '1'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds" || echo "Pages build request failed; the next push will rebuild the site."
+
+  core:
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.rebuild_core }}
+    needs: data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Emscripten
+        uses: emscripten-core/setup-emsdk@v16
+        with:
+          version: 4.0.1
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Fetch Play! source
+        run: |
+          git clone https://github.com/jpd002/Play-.git play-src
+          cd play-src
+          git checkout "${{ inputs.play_ref }}"
+          git submodule update --init --recursive
+          git apply ../core/play-js-api.patch
+      - name: Build WebAssembly core
+        working-directory: play-src
+        run: |
+          emcmake cmake --preset wasm-ninja
+          cmake --build --preset wasm-ninja-release --target Play
+      - name: Install core
+        run: |
+          OUT=play-src/build_cmake/build/wasm-ninja/Source/ui_js/Release
+          cp "$OUT/Play.js" "$OUT/Play.wasm" core/
+          cp play-src/License.txt core/LICENSE-Play.txt
+          SHA=$(git -C play-src rev-parse --short=7 HEAD)
+          sed -i "s/const CORE_VERSION = '[^']*';/const CORE_VERSION = '${SHA}-$(date +%Y%m%d)';/" js/emulator.js
+          rm -rf play-src
+      - name: Commit core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git add core js/emulator.js
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "chore: rebuild Play! core"
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break || sleep $((i*5)); done
+          curl -fsS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds" || true
