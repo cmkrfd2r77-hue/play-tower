@@ -2,8 +2,8 @@ import { t, setLang, getLang, formatBytes, timeAgo, formatDuration, formatNumber
 import { db, loadSettings, getSettings, saveSettings, requestPersistentStorage } from './store.js';
 import {
   loadLibrary, getGames, getGame, updateGame, removeGame, clearLibrary, onLibraryChange,
-  supportsFolderHandles, pickFolder, scanFolder, addFiles, readDrop, getGameFile, rememberFile,
-  loadHomebrewCatalog, installCatalogItem, getFolders, removeFolder, rescanFolder,
+  supportsFolderHandles, pickFolder, scanFolder, addFiles, readDrop, getGameFile, rememberFile, getGameExtras,
+  loadHomebrewCatalog, installCatalogItem, catalogItemSize, getFolders, removeFolder, rescanFolder,
   getRepoSources, removeRepoSource, scanGithubRepo,
 } from './library.js';
 import { loadCompat, loadGameDb, coverUrl, cover3dUrl } from './gamedb.js';
@@ -155,7 +155,7 @@ function virtualHomebrew() {
     .filter((item) => !installed.has(`hb:${item.id}`))
     .map((item) => ({
       id: `hb:${item.id}`, virtual: true, item, title: item.title, source: 'homebrew', format: 'ELF', ext: 'elf',
-      image: item.image || null, author: item.author, license: item.license, size: item.size, addedAt: 0, lastPlayed: 0,
+      image: item.image || null, author: item.author, license: item.license, size: catalogItemSize(item), addedAt: 0, lastPlayed: 0,
     }));
 }
 
@@ -310,7 +310,7 @@ function storeCard(item, source) {
       ${desc ? `<p>${esc(desc)}</p>` : '<p></p>'}
       ${progress !== undefined ? `<div class="progress" style="--p:${Math.round(progress * 100)}%"><i></i></div>` : ''}
       <div class="store-foot">
-        <span class="by">${esc(t('by', { a: item.author || item.repo }))}${item.license ? ` · ${esc(item.license)}` : ''} · <span class="mono">${esc(formatBytes(item.size))}</span></span>
+        <span class="by">${esc(t('by', { a: item.author || item.repo }))}${item.license ? ` · ${esc(item.license)}` : ''} · <span class="mono">${esc(formatBytes(catalogItemSize(item)))}</span>${item.source ? ` · <a href="${esc(item.source)}" target="_blank" rel="noopener">${esc(t('sourceLicense'))}</a>` : (item.repo ? ` · <a href="https://github.com/${esc(item.repo)}" target="_blank" rel="noopener">${esc(t('sourceLicense'))}</a>` : '')}</span>
         ${installed
           ? `<button class="btn primary" data-act="play" data-id="${esc(id)}">${icon('play')}<span>${esc(t('play'))}</span></button>`
           : `<button class="btn" data-act="install" data-source="${source}" data-id="${esc(id)}" ${progress !== undefined ? 'disabled' : ''}>${icon('download')}<span>${esc(progress !== undefined ? t('downloading', { p: Math.round(progress * 100) }) : t('install'))}</span></button>`}
@@ -631,7 +631,9 @@ async function launchGame(id) {
     emu.setFrameLimit(getSettings().frameLimit);
     state.ff = false;
     $('#hud-ff').classList.remove('on');
-    await emu.boot(game, file);
+    const extras = await getGameExtras(game);
+    if (extras.data.length) setBootStatus(t('preparingFiles'), 1);
+    await emu.boot(game, file, extras);
     state.session = { game, startedAt: Date.now() };
     input.setInGame(true);
     startFpsMeter();
@@ -1232,7 +1234,7 @@ function wireEvents() {
     closePauseMenu(false);
     const file = await getGameFile(game);
     if (!file) return;
-    await emu.boot(game, file);
+    await emu.boot(game, file, await getGameExtras(game));
     state.session.startedAt = Date.now();
     input.setInGame(true);
     $('#outputCanvas').focus();

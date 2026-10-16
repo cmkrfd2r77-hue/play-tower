@@ -28,11 +28,24 @@
 - **إدخال افتراضي من JavaScript** لكل أزرار يدَي تحكم بدل لوحة مفاتيح ثابتة على الـ canvas.
 - **واجهات جديدة**: `pauseVm` و`resumeVm` (غير حاجبة للخيط الرئيسي)، و`saveState`/`loadState`/`getStateResult`، و`setOutputSize`، و`setResolutionFactor`، و`setPresentationMode`، و`setFrameLimit`، و`setVolume`، و`getVersion`.
 - **إصلاح توافق في محاكاة GS**: برامج Homebrew المبنية بـ ps2sdk قديم كانت تتجمّد بعد الإطار الأول، لأن `graph_wait_vsync` يمسح حدث FINISH الذي يضبطه Play! فورًا، فينتظر `draw_wait_finish` إلى الأبد. صار الحدث يظهر بعد بضع قراءات لـ CSR عندما تكون مقاطعته مقنّعة، كما على الجهاز الحقيقي. بهذا تعمل Dungeon Game وبقية عروض glampert.
+- **تشغيل ألعاب تقرأ ملفاتها من USB**: `bootVirtualElf` يمرّر وسائط للبرنامج، و`setHostDirectory` يحدّد مجلد `host:`، وصار `mass:` و`cdfs:` متاحين أيضًا.
+- **إصلاح مؤقّت EE**: حدث المقارنة كان يضيع عندما يلتف العدّاد في الخطوة نفسها (يؤثّر على `DelayThread` في ps2sdk).
 - `preserveDrawingBuffer` لالتقاط الصور، و IDBFS لحفظ البيانات.
+
+## ألعاب مفتوحة المصدر جاهزة
+
+ملفاتها موجودة في مجلد [`games/`](games) وتظهر في المتجر بنقرة تثبيت واحدة. كل لعبة معها رخصتها وملف `SOURCE.md` يشير إلى المصدر الدقيق.
+
+| اللعبة | الملفات | الرخصة |
+|---|---|---|
+| **Quake** (محرك QuakeSpasm، نقل [glampert/quake-ps2](https://github.com/glampert/quake-ps2)) مع بيانات [LibreQuake](https://github.com/lavenderdotpet/LibreQuake) الحرة | `games/quake/quake.elf` + `games/quake/id1.zip` | GPL-2.0 للمحرك، BSD-3 للبيانات |
+| **SuperTux** 0.1.1 (نقل [headshot2017/supertux-ps2](https://github.com/headshot2017/supertux-ps2)) | `games/supertux/supertux.elf` + `games/supertux/data.zip` | GPL-2.0 |
+
+ملفات البيانات (`.zip`) تُفك في ذاكرة المتصفح عند كل تشغيل وتظهر للعبة على `host:` و`mass:`، مثل مجلد على ذاكرة USB في الجهاز الحقيقي.
 
 ## ملاحظة قانونية
 
-البرج لا ينزّل ألعابًا تجارية. شغّل نسخًا صنعتها بنفسك من أقراصك. ألعاب متجر GitHub كلها مفتوحة المصدر ومسموح بتوزيعها (مثل [glampert/ps2-homebrew](https://github.com/glampert/ps2-homebrew) برخصة MIT). الأغلفة تُعرض مباشرة من مستودعها على GitHub ولا تُنسخ هنا.
+البرج لا ينزّل ألعابًا تجارية. شغّل نسخًا صنعتها بنفسك من أقراصك. ألعاب المتجر كلها مفتوحة المصدر ومسموح بتوزيعها (مثل [glampert/ps2-homebrew](https://github.com/glampert/ps2-homebrew) برخصة MIT، وQuake مع بيانات LibreQuake الحرة بدل بيانات id Software التجارية). الأغلفة تُعرض مباشرة من مستودعها على GitHub ولا تُنسخ هنا.
 
 ## الملفات
 

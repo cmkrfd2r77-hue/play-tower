@@ -1,0 +1,127 @@
+Quake for the PlayStation 2 - release 1.0.0
+===============================================
+
+An unofficial, fan-made port of id Software's Quake to the Sony
+PlayStation 2, based on QuakeSpasm and built entirely with the free
+PS2DEV SDK.
+
+  Project home:  https://github.com/glampert/quake-ps2
+  Source code:   https://github.com/glampert/quake-ps2/tree/28c6c1c062eff6b2b85edca9d986f9a0e4010182
+                 (the exact commit these ELFs were built from)
+
+This package contains only the program. It does not contain the Quake
+game data (id1/pak0.pak, and pak1.pak for the registered game), which is
+not free software: use the shareware episode or your own copy of the
+game. See the project page for how to set up the id1/ folder and run the
+game on a console or in PCSX2.
+
+
+License
+-------
+
+This program is free software, released under the GNU General Public
+License version 2. A copy of the license is in the LICENSE file that
+comes with this package, and online at:
+
+  https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+
+You may copy, modify and redistribute it under the terms of that license.
+If you redistribute these binaries, you must also offer their complete
+corresponding source code, which is available at the links above.
+
+This program comes with ABSOLUTELY NO WARRANTY; see sections 11 and 12 of
+the GPL for details.
+
+
+Quake
+-----
+
+Quake is Copyright (C) 1996-2001 id Software, Inc. id released the Quake
+engine and game source code under the GNU GPL version 2:
+
+  https://github.com/id-Software/Quake
+
+Quake is a trademark of id Software / ZeniMax Media. This project is not
+affiliated with or endorsed by id Software, ZeniMax Media, Bethesda,
+Microsoft or Sony Interactive Entertainment.
+
+
+QuakeSpasm
+----------
+
+The engine, client, server and QuakeC virtual machine are QuakeSpasm
+0.97.0's, changed only where the PS2 needed it. QuakeSpasm is released
+under the GNU GPL version 2:
+
+  Copyright (C) 2010-2019 QuakeSpasm developers
+  Copyright (C) 2007-2016 O. Sezer
+  Copyright (C) 2007-2008 Kristian Duske
+  Copyright (C) 2002-2009 John Fitzgibbons and others (FitzQuake)
+
+  https://github.com/sezero/quakespasm
+
+
+The PS2 port
+------------
+
+Copyright (C) 2026 Guilherme Lampert and contributors.
+
+The PlayStation 2 backend, which comes from the Quake II port at
+(https://github.com/glampert/quake2-ps2), and all changes made to the
+QuakeSpasm source are released under the same GNU GPL version 2.
+
+  https://github.com/glampert/quake-ps2
+
+
+Third-party components
+----------------------
+
+The program also includes code from:
+
+  - PS2SDK (https://github.com/ps2dev/ps2sdk): the EE libraries and IOP
+    modules, under the Academic Free License 2.0.
+
+  - miniz (https://github.com/richgel999/miniz), under the MIT license:
+
+      Copyright 2013-2014 RAD Game Tools and Valve Software
+      Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use, copy,
+      modify, merge, publish, distribute, sublicense, and/or sell copies
+      of the Software, and to permit persons to whom the Software is
+      furnished to do so, subject to the following conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+      SOFTWARE.
+
+  - strlcpy and strlcat from OpenBSD, under the ISC license:
+
+      Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+
+      Permission to use, copy, modify, and distribute this software for
+      any purpose with or without fee is hereby granted, provided that the
+      above copyright notice and this permission notice appear in all
+      copies.
+
+      THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+      WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+      WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+      AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+      DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
+      OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+      TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+      PERFORMANCE OF THIS SOFTWARE.
+
+  - dlmalloc by Doug Lea, released to the public domain.

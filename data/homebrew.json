@@ -1,6 +1,54 @@
 {
-  "note": "Open-source PS2 homebrew that is free to redistribute. Files are fetched straight from GitHub.",
+  "note": "Open-source PS2 homebrew and ports that are free to redistribute. Programs and data packs are served from this site (games/) or fetched from their GitHub repositories.",
   "items": [
+    {
+      "id": "quake",
+      "title": "Quake",
+      "author": "id Software · PS2: Guilherme Lampert",
+      "license": "GPL-2.0 · LibreQuake BSD-3",
+      "repo": "glampert/quake-ps2",
+      "url": "games/quake/quake.elf",
+      "size": 1352544,
+      "image": "games/quake/shot.png",
+      "kind": "game",
+      "data": [
+        {
+          "url": "games/quake/id1.zip",
+          "size": 25019275,
+          "unzip": true,
+          "name": "id1.zip"
+        }
+      ],
+      "source": "games/quake/SOURCE.md",
+      "desc": {
+        "ar": "Quake الأسطورية بمحرك QuakeSpasm منقولة إلى PS2، مع LibreQuake: مستويات ووحوش وأسلحة حرة بالكامل. الاتجاهات للحركة، R2 للإطلاق، ✕ للقفز، L1/R1 لتبديل السلاح، START للقائمة.",
+        "en": "The legendary Quake on the QuakeSpasm engine, ported to PS2, with LibreQuake: fully free levels, monsters and weapons. D-pad moves, R2 fires, ✕ jumps, L1/R1 switch weapons, START opens the menu."
+      }
+    },
+    {
+      "id": "supertux",
+      "title": "SuperTux",
+      "author": "SuperTux team · PS2: headshot2017",
+      "license": "GPL-2.0",
+      "repo": "headshot2017/supertux-ps2",
+      "url": "games/supertux/supertux.elf",
+      "size": 4188680,
+      "image": "games/supertux/shot.png",
+      "kind": "game",
+      "data": [
+        {
+          "url": "games/supertux/data.zip",
+          "size": 7680776,
+          "unzip": true,
+          "name": "data.zip"
+        }
+      ],
+      "source": "games/supertux/SOURCE.md",
+      "desc": {
+        "ar": "لعبة المنصات الشهيرة مفتوحة المصدر: ساعد البطريق تكس على إنقاذ بيني عبر عوالم الجليد. الاتجاهات للحركة، ✕ للقفز ودخول المرحلة، □ للجري، ○ للإيقاف. تبدأ القائمة على «Quit»، فاضغط ↓ مرة ثم ✕.",
+        "en": "The famous open-source platformer: help Tux rescue Penny across the ice worlds. D-pad moves, ✕ jumps and enters a level, □ runs, ○ pauses. The menu opens on “Quit”, so press ↓ once, then ✕."
+      }
+    },
     {
       "id": "glampert-dungeon",
       "title": "Dungeon Game",

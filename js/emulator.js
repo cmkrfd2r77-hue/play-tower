@@ -3,10 +3,14 @@
 // save states) in IndexedDB, and exposes boot / pause / save-state / video controls.
 
 import { DiscImageDevice } from './disc.js';
+import { unzip } from './zip.js';
 
-const CORE_VERSION = 'd44bfa1-tower2';
+const CORE_VERSION = 'd44bfa1-tower3';
 const DATA_DIR = '/home/web_user/.local/share/Play Data Files';
 const STATE_DIR = `${DATA_DIR}/states`;
+// host: and mass: point here. It lives in memory only, so game data packs are not copied
+// into IndexedDB a second time; they are unpacked from the library before each boot.
+const HOST_DIR = '/hostfs';
 
 // The core creates its AudioContext itself; track it so it can be resumed after a
 // user gesture (browsers start audio suspended).
@@ -125,8 +129,11 @@ export class Emulator {
       }
       module.FS.mkdirTree(STATE_DIR);
       module.FS.mkdirTree('/boot');
+      module.FS.mkdirTree(HOST_DIR);
       module.discImageDevice = new DiscImageDevice(module);
       module.ccall('initVm', '', [], []);
+      // Must follow initVm: creating the VM registers the default host directory.
+      module.setHostDirectory(HOST_DIR);
       this.version = module.getVersion();
       this.module = module;
       this.syncTimer = setInterval(() => this.persist(), 15000);
@@ -155,11 +162,46 @@ export class Emulator {
     }));
   }
 
-  async boot(game, file) {
+  clearHost() {
+    const FS = this.module.FS;
+    const remove = (dir) => {
+      for (const name of FS.readdir(dir)) {
+        if (name === '.' || name === '..') continue;
+        const path = `${dir}/${name}`;
+        if (FS.isDir(FS.stat(path).mode)) {
+          remove(path);
+          FS.rmdir(path);
+        } else FS.unlink(path);
+      }
+    };
+    remove(HOST_DIR);
+  }
+
+  writeHostFile(path, bytes) {
+    const FS = this.module.FS;
+    const full = `${HOST_DIR}/${path.replace(/^\/+/, '')}`;
+    FS.mkdirTree(full.slice(0, full.lastIndexOf('/')));
+    FS.writeFile(full, bytes);
+  }
+
+  // extras: { data: [{ blob, name, unzip }], args: [] } for games that read files from host:/mass:
+  async boot(game, file, extras = {}, onStatus) {
     const m = this.module;
     if (this.running) m.pauseVm();
     const isElf = game.ext === 'elf';
-    if (isElf) {
+    const data = extras.data || [];
+    const args = extras.args || [];
+    if (isElf && (data.length || args.length)) {
+      this.clearHost();
+      for (const item of data) {
+        onStatus?.(item.name);
+        if (item.unzip) await unzip(item.blob, (path, bytes) => this.writeHostFile(path, bytes));
+        else this.writeHostFile(item.name, new Uint8Array(await item.blob.arrayBuffer()));
+      }
+      const name = sanitize(game.fileName);
+      this.writeHostFile(name, new Uint8Array(await file.arrayBuffer()));
+      m.bootVirtualElf(`host:${name}`, args.join('\n'));
+    } else if (isElf) {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const path = `/boot/${sanitize(game.fileName)}`;
       m.FS.writeFile(path, bytes);

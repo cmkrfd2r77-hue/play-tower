@@ -257,6 +257,17 @@ export async function getGameFile(game) {
   return null;
 }
 
+// Data packs and arguments a game needs at boot (see Emulator.boot).
+export async function getGameExtras(game) {
+  const data = [];
+  for (const d of game.data || []) {
+    const blob = await db.get('blobs', d.blobId);
+    if (!blob?.data) throw new Error(`Missing data file ${d.name}`);
+    data.push({ blob: blob.data, name: d.name, unzip: d.unzip });
+  }
+  return { data, args: game.args || [] };
+}
+
 export function rememberFile(game, file) {
   sessionFiles.set(game.id, file);
 }
@@ -290,12 +301,30 @@ async function download(url, onProgress) {
   return new Blob(parts);
 }
 
+// Total download size of a catalog item: the program plus any data packs it needs.
+export function catalogItemSize(item) {
+  return (item.size || 0) + (item.data || []).reduce((sum, d) => sum + (d.size || 0), 0);
+}
+
 export async function installCatalogItem(item, source, onProgress) {
-  const data = await download(item.url, onProgress);
+  const total = catalogItemSize(item) || 1;
+  let done = 0;
+  const step = (size) => (p) => onProgress?.(Math.min(1, (done + p * (size || 0)) / total));
+  const data = await download(item.url, step(item.size));
+  done += item.size || data.size;
   const fileName = item.url.split('/').pop();
   const id = source === 'homebrew' ? `hb:${item.id}` : `repo:${item.repo}:${item.path}`;
   const blobId = `blob:${id}`;
   await db.put('blobs', { id: blobId, name: fileName, data });
+  // Data packs (WADs, PAKs, asset folders as .zip) are kept next to the program.
+  const extras = [];
+  for (const [i, d] of (item.data || []).entries()) {
+    const blob = await download(d.url, step(d.size));
+    done += d.size || blob.size;
+    const dataId = `${blobId}#data${i}`;
+    await db.put('blobs', { id: dataId, name: d.name || d.url.split('/').pop(), data: blob });
+    extras.push({ blobId: dataId, name: d.name || d.url.split('/').pop(), unzip: !!d.unzip, size: blob.size });
+  }
   const record = {
     id,
     title: item.title,
@@ -304,9 +333,11 @@ export async function installCatalogItem(item, source, onProgress) {
     format: extensionOf(fileName).toUpperCase(),
     ext: extensionOf(fileName),
     fileName,
-    size: data.size,
+    size: data.size + extras.reduce((sum, d) => sum + d.size, 0),
     source,
     blobId,
+    data: extras,
+    args: item.args || [],
     image: item.image || null,
     author: item.author || item.repo,
     repo: item.repo,

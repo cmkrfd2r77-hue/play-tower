@@ -32,7 +32,14 @@ async function cacheFirst(request, cacheName) {
   const hit = await cache.match(request);
   if (hit) return hit;
   const response = await fetch(request);
-  if (response.ok && response.type !== 'opaque') cache.put(request, response.clone());
+  if (response.ok && response.type !== 'opaque') {
+    // Core files are versioned with ?v=, so drop the copies of older versions.
+    const path = new URL(request.url).pathname;
+    for (const old of await cache.keys()) {
+      if (new URL(old.url).pathname === path && old.url !== request.url) await cache.delete(old);
+    }
+    cache.put(request, response.clone());
+  }
   return response;
 }
 
@@ -64,8 +71,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isCore = url.pathname.includes('/core/');
+  // Game programs and data packs are stored in the library (IndexedDB) once installed,
+  // so they are not copied into the cache as well.
+  const isGameFile = url.pathname.includes('/games/');
   event.respondWith((async () => {
-    const response = isCore ? await cacheFirst(request, CORE_CACHE) : await networkFirst(request, SHELL_CACHE);
+    const response = isGameFile ? await fetch(request)
+      : isCore ? await cacheFirst(request, CORE_CACHE) : await networkFirst(request, SHELL_CACHE);
     return isolate(response);
   })());
 });
